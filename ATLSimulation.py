@@ -169,14 +169,14 @@ pygame.init()
 
 WIN_WIDTH = 600
 WIN_HEIGHT = 600
-bg = pygame.image.load("Crossroads.png")
+bg = pygame.image.load("images/Crossroads.png")
 window = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 pygame.display.set_caption("Adaptive Traffic Lights")
 
-red = pygame.transform.scale_by(pygame.image.load("RedRed.png"), 0.5)
-yellow = pygame.transform.scale_by(pygame.image.load("YellowRed.png"), 0.5)
-green = pygame.transform.scale_by(pygame.image.load("GreenRed.png"), 0.5)
-turn = pygame.transform.scale_by(pygame.image.load("RedGreen.png"), 0.5)
+red = pygame.transform.scale_by(pygame.image.load("images/RedRed.png"), 0.5)
+yellow = pygame.transform.scale_by(pygame.image.load("images/YellowRed.png"), 0.5)
+green = pygame.transform.scale_by(pygame.image.load("images/GreenRed.png"), 0.5)
+turn = pygame.transform.scale_by(pygame.image.load("images/RedGreen.png"), 0.5)
 
 SOUTH = (200, 425)
 NORTH = (395, 175)
