@@ -314,7 +314,9 @@ def draw(win):
             min_time = car.creation_time
             min_ob = car
     if min_ob:
-        min_ob.color = (0, 0, 0)
+        c = -200*(time()-min_time)/25 + 200  # LINEAR INTERPOLATION
+        c = 0 if c < 0 else c
+        min_ob.color = (c, c, c)
     for car in north_cars+south_cars+east_cars+west_cars:
         draw_rectangle(win, car.x, car.y, car.width, car.height, car.color, car.rotation)
     pygame.display.update()
@@ -576,7 +578,7 @@ def random_car_generation(p_time, c_time, generation_period):
     if c_time - p_time > generation_period:
         n = random.randint(1, 4)
         em = False
-        if random.randint(1, 30) == 1:
+        if random.randint(1, 100) == 1:
             em = True
         if n == 1:
             create_north(em)
@@ -595,7 +597,7 @@ def sinusoidal_car_generation(p_time, c_time, generation_period, time_period=40)
         threshhold = int(round(abs(math.sin(time()*math.pi/time_period)), 2)*100)
         n = random.randint(0, 100)
         em = False
-        if random.randint(1, 30) == 1:
+        if random.randint(1, 100) == 1:
             em = True
         if n <= threshhold:
             n = random.randint(0, 1)
@@ -621,7 +623,7 @@ def custom_car_generation(p_time, c_time, generation_period, prob_list):
         east_limit = south_limit + prob_list["east"] * 100
         west_limit = east_limit + prob_list["west"] * 100
         em = False
-        if random.randint(1, 30) == 1:
+        if random.randint(1, 100) == 1:
             em = True
         if n <= north_limit:
             create_north(em)
@@ -635,40 +637,47 @@ def custom_car_generation(p_time, c_time, generation_period, prob_list):
     return False
 
 
-def control_standard_lights(p_time, c_time, current_phase):
-    if c_time - p_time > 3:
+def control_standard_lights(p_time, c_time, current_phase, decide=False):
+    if decide:
         return (current_phase % 4) + 1
+    if c_time - p_time > 3:
+        return "yellow"
     return False
 
 
-def control_smart_lights_v1(p_time, c_time, current_phase):
+def control_smart_lights_v1(p_time, c_time, current_phase, decide=False):
     global MAX_TIME_V1
     phase_costs = []
-    if c_time - p_time > MAX_TIME_V1 or (len(cars_inlanes_inphase(current_phase)) == 0 and c_time - p_time > 1.5):
+    if decide:
         for i in range(1, 5):
             phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time()-phase_ptimes[i-1]))
         target_phase = phase_costs.index(max(phase_costs))+1
         MAX_TIME_V1 = math.sqrt(len(cars_inlanes_inphase(target_phase))) * 10 / CAR_VEL
         MAX_TIME_V1 = 75/CAR_VEL if MAX_TIME_V1 > 75/CAR_VEL else MAX_TIME_V1
         return target_phase
+    if c_time - p_time > MAX_TIME_V1 or (len(cars_inlanes_inphase(current_phase)) == 0 and c_time - p_time > 1.5):
+        return "yellow"
     return False
 
 
-def control_smart_lights_v2(p_time, c_time, current_phase, threshhold=2):
+def control_smart_lights_v2(p_time, c_time, current_phase, decide=False, threshhold=2):
     global MIN_TIME_V2
     phase_costs = []
     for i in range(1, 5):
         phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time() - phase_ptimes[i - 1]))
-    if c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+    if decide:
         target_phase = phase_costs.index(max(phase_costs)) + 1
-        MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase)))/(2*CAR_VEL)
-        MIN_TIME_V2 = 25/CAR_VEL if MIN_TIME_V2 > 25/CAR_VEL else MIN_TIME_V2
+        MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase))) / (2 * CAR_VEL)
+        MIN_TIME_V2 = 25 / CAR_VEL if MIN_TIME_V2 > 25 / CAR_VEL else MIN_TIME_V2
         return target_phase
+    if c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+        return "yellow"
     return False
 
 
-def control_smart_lights_v3(p_time, c_time, current_phase, threshhold=2):
+def control_smart_lights_v3(p_time, c_time, current_phase, decide=False, threshhold=2):
     global MIN_TIME_V2
+    phase_costs = []
     em_vehicles = []
     em_car_moving = False
     for i in range(1, 5):
@@ -677,19 +686,33 @@ def control_smart_lights_v3(p_time, c_time, current_phase, threshhold=2):
         if car.emergency and (car.at_intersection() or car.in_lane()):
             em_car_moving = True
             break
-    if max(em_vehicles) > 0 and not em_car_moving:
-        cars_not_cleared.clear()
-        cars_not_cleared.extend(cars_inlanes_inphase(em_vehicles.index(max(em_vehicles))+1))
-        return em_vehicles.index(max(em_vehicles))+1
-    phase_costs = []
+
     for i in range(1, 5):
-        phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time() - phase_ptimes[i - 1]))
-    if not cars_not_cleared and c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+        min_time = float('inf')
+        min_ob = None
+        for car in cars_inlanes_inphase(i):
+            if car.creation_time < min_time:
+                min_time = car.creation_time
+                min_ob = car
+        if min_ob:
+            phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time() - min_time))
+        else:
+            phase_costs.append(1)
+    if decide:
+        if max(em_vehicles) > 0:
+            cars_not_cleared.clear()
+            cars_not_cleared.extend(cars_inlanes_inphase(em_vehicles.index(max(em_vehicles)) + 1))
+            print(f"EMERGENCY DECISION: {em_vehicles.index(max(em_vehicles)) + 1}")
+            return em_vehicles.index(max(em_vehicles)) + 1
         target_phase = phase_costs.index(max(phase_costs)) + 1
-        MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase)))/(2*CAR_VEL)
-        MIN_TIME_V2 = 25/CAR_VEL if MIN_TIME_V2 > 25/CAR_VEL else MIN_TIME_V2
+        MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase))) / (2 * CAR_VEL)
+        MIN_TIME_V2 = 25 / CAR_VEL if MIN_TIME_V2 > 25 / CAR_VEL else MIN_TIME_V2
         cars_not_cleared.extend(cars_inlanes_inphase(target_phase))
         return target_phase
+    if max(em_vehicles) > 0 and not em_car_moving:
+        return "yellow"
+    if not cars_not_cleared and c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+        return "yellow"
     return False
 
 
@@ -753,28 +776,27 @@ while run:
     # if custom_car_generation(ptime_car, ctime_car, 0.4, custom_prob):
     if sinusoidal_car_generation(ptime_car, ctime_car, 0.4):
         ptime_car = ctime_car
-    if start and not yellow_phase:
-        ctime_lights = time()
-        result = control_smart_lights_v3(ptime_lights, ctime_car, curr_phase)
-        if result:
-            prev_phase = curr_phase
-            curr_phase = result
-            yellow_phase = True
-            ptime_yellow = time()
     if not yellow_phase and start:
         phase(curr_phase)
-    else:
+    if start and not yellow_phase:
+        ctime_lights = time()
+        result = control_smart_lights_v3(ptime_lights, ctime_lights, curr_phase)
+        if result:
+            prev_phase = curr_phase
+            yellow_phase = True
+            ptime_yellow = time()
+    if start and yellow_phase:
         ctime_yellow = time()
         if ctime_yellow - ptime_yellow < min_yellow_time or not clear_intersection():
             phase(str(prev_phase)+"yellow")
         else:
             yellow_phase = False
+            curr_phase = control_smart_lights_v3(ptime_lights, ctime_lights, curr_phase, True)
             t_elapsed, cars = record_stats(curr_phase)
             phase_wait_times.append(t_elapsed)
             print(f"Time waited: {t_elapsed}")
             print(f"Cars affected: {cars}")
             print()
-            phase(curr_phase)
             ptime_lights = time()
 
     move_cars()
