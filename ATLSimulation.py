@@ -250,11 +250,9 @@ def choose_lane(arr, max_cars):
 
 
 def append_to_move_list(dir1, dir2, lanes):
-    for car in dir1:
+    for car in dir1+dir2:
         if car.type in lanes and car not in moving_cars:
-            moving_cars.append(car)
-    for car in dir2:
-        if car.type in lanes and car not in moving_cars:
+            yet_to_add_to_wait[car] = time()-car.creation_time
             moving_cars.append(car)
 
 
@@ -334,16 +332,21 @@ def move_cars():
         else:
             parking.pop(i)
     temp_l = []
+    i = 0
+    while i < len(yet_to_add_to_wait):
+        if list(yet_to_add_to_wait.keys())[i].at_intersection():
+            car_wait_times.append(yet_to_add_to_wait[list(yet_to_add_to_wait.keys())[i]])
+            yet_to_add_to_wait.pop(list(yet_to_add_to_wait.keys())[i])
+            print("CAR WAIT TIMES")
+            print(car_wait_times)
+        else:
+            i += 1
     for car in moving_cars:
         if car.at_intersection() and car in cars_not_cleared:
             cars_not_cleared.remove(car)
         if not car.move():
             temp_l.append(car)
             cars_cleared += 1
-            if car.emergency:
-                emergency_wait_times.append(time()-car.creation_time)
-            else:
-                car_wait_times.append(time()-car.creation_time)
             if car.dir == "north":
                 north_cars.remove(car)
             elif car.dir == "south":
@@ -508,9 +511,11 @@ def phase(n):
                 if moving_cars[i].in_lane():
                     if moving_cars[i].dir == "north":
                         moving_cars[i].dest = north_yl
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         north_yl -= margin
                     elif moving_cars[i].dir == "south":
                         moving_cars[i].dest = south_yl
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         south_yl += margin
                     parking.append(moving_cars[i])
                     moving_cars.pop(i)
@@ -523,9 +528,11 @@ def phase(n):
                 if moving_cars[i].in_lane():
                     if moving_cars[i].dir == "north":
                         moving_cars[i].dest = north_yf
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         north_yf -= margin
                     elif moving_cars[i].dir == "south":
                         moving_cars[i].dest = south_yf
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         south_yf += margin
                     parking.append(moving_cars[i])
                     moving_cars.pop(i)
@@ -538,9 +545,11 @@ def phase(n):
                 if moving_cars[i].in_lane():
                     if moving_cars[i].dir == "east":
                         moving_cars[i].dest = east_xl
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         east_xl += margin
                     elif moving_cars[i].dir == "west":
                         moving_cars[i].dest = west_xl
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         west_xl -= margin
                     parking.append(moving_cars[i])
                     moving_cars.pop(i)
@@ -553,9 +562,11 @@ def phase(n):
                 if moving_cars[i].in_lane():
                     if moving_cars[i].dir == "east":
                         moving_cars[i].dest = east_xf
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         east_xf += margin
                     elif moving_cars[i].dir == "west":
                         moving_cars[i].dest = west_xf
+                        yet_to_add_to_wait.pop(moving_cars[i])
                         west_xf -= margin
                     parking.append(moving_cars[i])
                     moving_cars.pop(i)
@@ -759,6 +770,7 @@ custom_prob = {
 
 phase_ptimes = [time() for _ in range(4)]
 phase_wait_times = []
+yet_to_add_to_wait = {}
 car_wait_times = []
 emergency_wait_times = []
 cars_not_cleared = []
@@ -815,4 +827,7 @@ print(f"Car cleared per second: {cars_cleared/elapsed:.3f} cars/sec")
 print(f"Average wait time per phase: {sum(phase_wait_times)/len(phase_wait_times):.3f} sec")
 print(f"Average wait time per car: {sum(car_wait_times)/len(car_wait_times):.3f} sec")
 print(f"Maximum time waited by a car: {max(car_wait_times):.3f} sec")
-print(f"Maximum time waited by an emergency vehicle: {max(emergency_wait_times):.3f} sec")
+if emergency_wait_times:
+    print(f"Maximum time waited by an emergency vehicle: {max(emergency_wait_times):.3f} sec")
+else:
+    print("No emergency vehicles passed")
