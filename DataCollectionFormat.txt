@@ -1,0 +1,67 @@
+DATA TO COLLECT:
+
+Phase 1:
+-> Analyze the phases and figure out what they are
+-> Figure out camera positions which give clear view of lanes and lights
+
+
+Phase 2:
+Cycle 1 East
+CarsPassed  |  PhaseDir  |  Lane  |  TimeWaited  |  EmergencyWaitTime  |  TimeOfDay
+
+Cycle 2 North:
+CarsPassed  |  PhaseDir  |  Lane  |  TimeWaited  |  EmergencyWaitTime  |  TimeOfDay
+
+Cycle 3 West:
+CarsPassed  |  PhaseDir  |  Lane  |  TimeWaited  |  EmergencyWaitTime  |  TimeOfDay
+
+Cycle 4 South:
+CarsPassed  |  PhaseDir  |  Lane  |  TimeWaited  |  EmergencyWaitTime  |  TimeOfDay
+
+Side Data:
+-> Average time taken by a general 2-wheeler, 4-wheeler or a heavy vehicle to cross the road. Use this time
+   exactly in the model to kind of imitate the real world fully.
+-> Total Cars that passed (FOR KPI)
+-> Amount of time for which the whole data collection was done (FOR KPI)
+
+
+KPIs (Key Performance Indicators):
+1) Cars passed per second
+2) Average time spent waiting by a phase
+3) Average time spent waiting by a car (will be close to that of the phase, maybe some subtraction though)
+4) Maximum time waited by a car   ---> If possible
+5) Maximum time waited by an Emergency Vehicle   ---> If possible
+
+
+NOTES:
+For PhaseDir, look at Ring and Barrier Diagram [1-4]
+1 = FL(N)FL(S)
+2 = R(N)R(S)
+3 = FRL(S)L(E)
+4 = FRL(N)L(W)
+5 = FRL(E)L(N)
+6 = FRL(W)L(S)
+
+Reconsidered: Study the intersection, it might not follow the ring and barrier diagram.
+
+TimeOfDay:
+1 = Afternoon (1-4 pm)
+2 = Morning (8-10 am)
+3 = Evening (7-9 pm) [MAYBE]
+
+Lane:
+1 = North
+2 = South
+3 = East
+4 = West
+
+TimeWaited = Amount of time waited by the first car that entered the lane
+
+'EmergencyWaitTime', Defaults to 0 if no emergency vehicle; equals the amount of time the emergency vehicle had
+to wait at a particular phase (if any emergency vehicle present)
+
+IMPORTANT NOTE: Spend some time studying the intersection before collecting data. WILL give you clarity. Answer
+questions like: Are the phases exactly same? Is Forward and Right Grouped? Is left separate? Will the data
+collected be accurate? How can I make it accurate according to my model (Gungahlin traffic system is not like
+my model). Futher Questions: Are maximum values in 'TimeWaited' the same? If so, do we need to split it into
+time waited by all the phases when the specific phase was called? 

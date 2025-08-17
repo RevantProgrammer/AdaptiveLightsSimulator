@@ -1,4 +1,10 @@
-CarsPassed,PhaseDir,TimeWaited,EmergencyWaitTime,TimeOfDay
-8,5,54.89,0,1
-7,5,41.16,0,1
-8,5,59.65,0,1
+CarsPassed,PhaseDir,Lane,TimeWaited,EmergencyWaitTime,TimeOfDay
+8,5,3,54.89,0,1
+7,5,3,41.16,0,1
+8,5,3,59.65,0,1
+8,1,1,49.31,0,1
+1,5,1,12.82,0,1
+2,2,1,29.85,0,1
+4,1,1,9.95,0,1
+1,2,1,54.86,0,1
+6,1,1,4.50,0,1

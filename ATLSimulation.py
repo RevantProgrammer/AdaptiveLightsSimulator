@@ -183,7 +183,7 @@ NORTH = (395, 175)
 WEST = (175, 200)
 EAST = (425, 395)
 MAX_CARS_PER_LANE = 9
-CAR_VEL = 4
+CAR_VEL = 5
 
 south_cars = []
 north_cars = []
@@ -334,9 +334,13 @@ def move_cars():
     temp_l = []
     i = 0
     while i < len(yet_to_add_to_wait):
-        if list(yet_to_add_to_wait.keys())[i].at_intersection():
-            car_wait_times.append(yet_to_add_to_wait[list(yet_to_add_to_wait.keys())[i]])
-            yet_to_add_to_wait.pop(list(yet_to_add_to_wait.keys())[i])
+        key_list = list(yet_to_add_to_wait.keys())
+        if key_list[i].at_intersection():
+            if key_list[i].emergency:
+                emergency_wait_times.append(yet_to_add_to_wait[key_list[i]])
+            else:
+                car_wait_times.append(yet_to_add_to_wait[key_list[i]])
+            yet_to_add_to_wait.pop(key_list[i])
             print("CAR WAIT TIMES")
             print(car_wait_times)
         else:
@@ -478,8 +482,8 @@ def emergency_inlanes_inphase(phase):
 
 def phase(n):
     global north_yf, south_yf, east_xf, west_xf, north_yl, south_yl, east_xl, west_xl, states
-    for i in range(1,5):
-        if len(cars_inlanes_inphase(i))==0:
+    for i in range(1, 5):
+        if len(cars_inlanes_inphase(i)) == 0:
             phase_ptimes[i-1] = time()
     if isinstance(n, int):
         phase_ptimes[n - 1] = time()
@@ -728,7 +732,6 @@ def control_smart_lights_v3(p_time, c_time, current_phase, decide=False, threshh
 
 
 def handle_keypress(key):
-    global start
     match key:
         case pygame.K_q:
             print(pygame.mouse.get_pos())
@@ -740,8 +743,6 @@ def handle_keypress(key):
             create_south()
         case pygame.K_w:
             create_west()
-        case pygame.K_b:
-            start = not start
         case pygame.K_1:
             phase(1)
         case pygame.K_2:
@@ -754,7 +755,6 @@ def handle_keypress(key):
 
 states = [red, red, red, red]
 run = True
-start = True
 curr_phase = 0
 yellow_phase = False
 ptime_car = time()
@@ -786,18 +786,17 @@ while run:
             handle_keypress(event.key)
     ctime_car = time()
     # if custom_car_generation(ptime_car, ctime_car, 0.4, custom_prob):
-    if sinusoidal_car_generation(ptime_car, ctime_car, 0.4):
+    if sinusoidal_car_generation(ptime_car, ctime_car, 0.2):
         ptime_car = ctime_car
-    if not yellow_phase and start:
+    if not yellow_phase:
         phase(curr_phase)
-    if start and not yellow_phase:
         ctime_lights = time()
         result = control_smart_lights_v3(ptime_lights, ctime_lights, curr_phase)
         if result:
             prev_phase = curr_phase
             yellow_phase = True
             ptime_yellow = time()
-    if start and yellow_phase:
+    if yellow_phase:
         ctime_yellow = time()
         if ctime_yellow - ptime_yellow < min_yellow_time or not clear_intersection():
             phase(str(prev_phase)+"yellow")

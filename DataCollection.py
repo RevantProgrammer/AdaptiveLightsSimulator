@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-features = ["CarsPassed", "PhaseDir", "TimeWaited", "EmergencyWaitTime", "TimeOfDay"]
+features = ["CarsPassed", "PhaseDir", "Lane", "TimeWaited", "EmergencyWaitTime", "TimeOfDay"]
 file_name = "TrafficData.csv"
 if os.path.exists(file_name):
     data = pd.read_csv(file_name).to_dict(orient="list")
