@@ -20,7 +20,7 @@ Instead of cycling through phases on a fixed timer, the adaptive controller look
   | 3 | East + West `L` turn lanes |
   | 4 | East + West `F`/`R` lanes |
 
-- Several light controllers (see [Controllers](#controllers))
+- Several light controllers (see the Controllers section below)
 - Several traffic generators: uniform random, sinusoidal (demand swings between the N/S and E/W roads), and custom per-direction probabilities
 - Emergency vehicles (about a 1% chance per spawned car, drawn in white)
 - The car that has waited longest slowly fades to black, so starvation is easy to spot
@@ -49,7 +49,7 @@ Run it from the project root so the `images/` folder is found:
 python ATLSimulation.py
 ```
 
-A run lasts **100 seconds**, or until you close the window. Afterwards a summary is printed to the console and the results are saved (see [Output data](#output-data)).
+A run lasts **100 seconds**, or until you close the window. Afterwards a summary is printed to the console and the results are saved (see the Output data section below).
 
 ### Controls
 
@@ -144,6 +144,12 @@ It loads `TrafficData.csv`, `CarWaits.txt` and `SlowSimCarWaits.txt`, then:
 └── requirements.txt
 ```
 
+## Authorship
+
+All of the code, the simulation design, the light controllers, the real-world data collection and the statistical analysis are my own work, written by hand.
+
+Claude (Anthropic's AI assistant) was used **solely for documentation**: it wrote this README.md and the .gitignore. It did not write, design or change any of the project's code or data.
+
 ## Credits
 
-The rotated rectangle drawing in `draw_rectangle` is adapted from [Tim Swast's Replit example](https://replit.com/@TimSwast1/RotateARectanlge?v=1#main.py).
+The rotated rectangle drawing in `draw_rectangle` is adapted from a Replit example by Tim Swast ("RotateARectanlge"). The original link, kept in a comment in `ATLSimulation.py`, is no longer available.
