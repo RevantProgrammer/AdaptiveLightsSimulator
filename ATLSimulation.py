@@ -2,6 +2,9 @@ import pygame
 import random
 import math
 from time import time
+import pandas as pd
+import os
+import numpy as np
 
 
 class Car:
@@ -29,18 +32,18 @@ class Car:
                 if self.x < 5:
                     return False
                 if 390 < self.y < 425 and self.rotation < 180:
-                    vel = 3
-                    if 180-self.rotation >= 6:
-                        self.rotation += 6
+                    vel = 2 * CAR_VEL/5
+                    if 180 - self.rotation >= 4 * CAR_VEL/5:
+                        self.rotation += 4 * CAR_VEL/5
                     else:
                         self.rotation = 180
             else:
                 if self.x > 595:
                     return False
                 if 255 < self.y < 415 and self.rotation > 0:
-                    vel = 3
-                    if self.rotation >= 1.15:
-                        self.rotation -= 1.15
+                    vel = 3 * CAR_VEL/5
+                    if self.rotation >= 1.15 * CAR_VEL/5:
+                        self.rotation -= 1.15 * CAR_VEL/5
                     else:
                         self.rotation = 0
         elif self.dir == "north":
@@ -51,18 +54,18 @@ class Car:
                 if self.x > 595:
                     return False
                 if 180 < self.y < 215 and self.rotation < 0:
-                    vel = 3
-                    if -self.rotation >= 6:
-                        self.rotation += 6
+                    vel = 2 * CAR_VEL/5
+                    if -self.rotation >= 4 * CAR_VEL/5:
+                        self.rotation += 4 * CAR_VEL/5
                     else:
                         self.rotation = 0
             else:
                 if self.x < 5:
                     return False
                 if 180 < self.y < 340 and self.rotation > -180:
-                    vel = 3
-                    if self.rotation+180 >= 1.15:
-                        self.rotation -= 1.15
+                    vel = 3 * CAR_VEL/5
+                    if self.rotation + 180 >= 1.15 * CAR_VEL/5:
+                        self.rotation -= 1.15 * CAR_VEL/5
                     else:
                         self.rotation = -180
         elif self.dir == "east":
@@ -73,18 +76,18 @@ class Car:
                 if self.y > 595:
                     return False
                 if 390 < self.x < 425 and self.rotation < 270:
-                    vel = 3
-                    if 270-self.rotation >= 6:
-                        self.rotation += 6
+                    vel = 2 * CAR_VEL/5
+                    if 270 - self.rotation >= 4 * CAR_VEL/5:
+                        self.rotation += 4 * CAR_VEL/5
                     else:
                         self.rotation = 270
             else:
                 if self.y < 5:
                     return False
                 if 250 < self.x < 425 and self.rotation > 90:
-                    vel = 3
-                    if self.rotation-90 >= 1.15:
-                        self.rotation -= 1.15
+                    vel = 3 * CAR_VEL/5
+                    if self.rotation - 90 >= 1.15 * CAR_VEL/5:
+                        self.rotation -= 1.15 * CAR_VEL/5
                     else:
                         self.rotation = 90
         else:
@@ -95,18 +98,18 @@ class Car:
                 if self.y < 5:
                     return False
                 if 180 < self.x < 215 and self.rotation < 90:
-                    vel = 3
-                    if 90-self.rotation >= 6:
-                        self.rotation += 6
+                    vel = 2 * CAR_VEL/5
+                    if 90 - self.rotation >= 4 * CAR_VEL/5:
+                        self.rotation += 4 * CAR_VEL/5
                     else:
                         self.rotation = 90
             else:
                 if self.y > 595:
                     return False
                 if 175 < self.x < 340 and self.rotation > -90:
-                    vel = 3
-                    if self.rotation+90 >= 1.15:
-                        self.rotation -= 1.15
+                    vel = 3 * CAR_VEL/5
+                    if self.rotation + 90 >= 1.15 * CAR_VEL/5:
+                        self.rotation -= 1.15 * CAR_VEL/5
                     else:
                         self.rotation = -90
         angle = self.rotation * math.pi / 180
@@ -183,7 +186,7 @@ NORTH = (395, 175)
 WEST = (175, 200)
 EAST = (425, 395)
 MAX_CARS_PER_LANE = 9
-CAR_VEL = 5
+CAR_VEL = 2
 
 south_cars = []
 north_cars = []
@@ -201,11 +204,11 @@ east_xf = EAST[0]
 east_xl = EAST[0]
 west_xf = WEST[0]
 west_xl = WEST[0]
-cars_cleared = 0
+p1_cleared, p2_cleared, p3_cleared, p4_cleared = 0, 0, 0, 0
 
 
 def cost_function(cars, time):
-    return (cars+1)**(0.1*time)+cars/50
+    return (cars + 1) ** (0.1 * time) + cars / 50
 
 
 def list_in_lane(dir, lanes):
@@ -250,9 +253,9 @@ def choose_lane(arr, max_cars):
 
 
 def append_to_move_list(dir1, dir2, lanes):
-    for car in dir1+dir2:
+    for car in dir1 + dir2:
         if car.type in lanes and car not in moving_cars:
-            yet_to_add_to_wait[car] = time()-car.creation_time
+            yet_to_add_to_wait[car] = time() - car.creation_time
             moving_cars.append(car)
 
 
@@ -278,7 +281,7 @@ def draw_rectangle(w, x, y, width, height, color, rotation=0):
 
     # The distance from the center of the rectangle to
     # one of the corners is the same for each corner.
-    radius = math.sqrt((height / 2)**2 + (width / 2)**2)
+    radius = math.sqrt((height / 2) ** 2 + (width / 2) ** 2)
 
     # Get the angle to one of the corners with respect
     # to the x-axis.
@@ -307,21 +310,21 @@ def draw(win):
     win.blit(states[2], (320, 380))
     min_time = float('inf')
     min_ob = None
-    for car in north_cars+south_cars+east_cars+west_cars:
+    for car in north_cars + south_cars + east_cars + west_cars:
         if car.creation_time < min_time:
             min_time = car.creation_time
             min_ob = car
     if min_ob:
-        c = -200*(time()-min_time)/25 + 200  # LINEAR INTERPOLATION
+        c = -200 * (time() - min_time) / 25 + 200  # LINEAR INTERPOLATION
         c = 0 if c < 0 else c
         min_ob.color = (c, c, c)
-    for car in north_cars+south_cars+east_cars+west_cars:
+    for car in north_cars + south_cars + east_cars + west_cars:
         draw_rectangle(win, car.x, car.y, car.width, car.height, car.color, car.rotation)
     pygame.display.update()
 
 
 def move_cars():
-    global north_cars, south_cars, east_cars, west_cars, cars_cleared
+    global north_cars, south_cars, east_cars, west_cars, p1_cleared, p2_cleared, p3_cleared, p4_cleared
     i = 0
     while i < len(parking):
         if not parking[i] in moving_cars:
@@ -334,15 +337,12 @@ def move_cars():
     temp_l = []
     i = 0
     while i < len(yet_to_add_to_wait):
-        key_list = list(yet_to_add_to_wait.keys())
-        if key_list[i].at_intersection():
-            if key_list[i].emergency:
-                emergency_wait_times.append(yet_to_add_to_wait[key_list[i]])
+        if list(yet_to_add_to_wait.keys())[i].at_intersection():
+            if not list(yet_to_add_to_wait.keys())[i].emergency:
+                car_wait_times.append(yet_to_add_to_wait[list(yet_to_add_to_wait.keys())[i]])
             else:
-                car_wait_times.append(yet_to_add_to_wait[key_list[i]])
-            yet_to_add_to_wait.pop(key_list[i])
-            print("CAR WAIT TIMES")
-            print(car_wait_times)
+                emergency_wait_times.append(yet_to_add_to_wait[list(yet_to_add_to_wait.keys())[i]])
+            yet_to_add_to_wait.pop(list(yet_to_add_to_wait.keys())[i])
         else:
             i += 1
     for car in moving_cars:
@@ -350,15 +350,30 @@ def move_cars():
             cars_not_cleared.remove(car)
         if not car.move():
             temp_l.append(car)
-            cars_cleared += 1
             if car.dir == "north":
                 north_cars.remove(car)
+                if car.type in ['F', 'L']:
+                    p1_cleared += 1
+                else:
+                    p2_cleared += 1
             elif car.dir == "south":
                 south_cars.remove(car)
+                if car.type in ['F', 'L']:
+                    p1_cleared += 1
+                else:
+                    p2_cleared += 1
             elif car.dir == "east":
                 east_cars.remove(car)
+                if car.type in ['F', 'L']:
+                    p3_cleared += 1
+                else:
+                    p4_cleared += 1
             else:
                 west_cars.remove(car)
+                if car.type in ['F', 'L']:
+                    p3_cleared += 1
+                else:
+                    p4_cleared += 1
     for car in temp_l:
         moving_cars.remove(car)
 
@@ -466,7 +481,7 @@ def cars_inlanes_inphase(phase):
         case 4:
             return list_in_lane(east_cars, ['F', 'R']) + list_in_lane(west_cars, ['F', 'R'])
     return "NO"
-    
+
 
 def emergency_inlanes_inphase(phase):
     match phase:
@@ -481,30 +496,34 @@ def emergency_inlanes_inphase(phase):
 
 
 def phase(n):
-    global north_yf, south_yf, east_xf, west_xf, north_yl, south_yl, east_xl, west_xl, states
+    global just_start_time, north_yf, south_yf, east_xf, west_xf, north_yl, south_yl, east_xl, west_xl, states
     for i in range(1, 5):
         if len(cars_inlanes_inphase(i)) == 0:
-            phase_ptimes[i-1] = time()
+            phase_ptimes[i - 1] = time()
     if isinstance(n, int):
         phase_ptimes[n - 1] = time()
     match n:
         case 1:
-            append_to_move_list(north_cars, south_cars, ['L'])
+            if time() - just_start_time >= move_delay:
+                append_to_move_list(north_cars, south_cars, ['L'])
             states = [turn, turn, red, red]
             north_yl = NORTH[1]
             south_yl = SOUTH[1]
         case 2:
-            append_to_move_list(north_cars, south_cars, ['F', 'R'])
+            if time() - just_start_time >= move_delay:
+                append_to_move_list(north_cars, south_cars, ['F', 'R'])
             states = [green, green, red, red]
             north_yf = NORTH[1]
             south_yf = SOUTH[1]
         case 3:
-            append_to_move_list(east_cars, west_cars, ['L'])
+            if time() - just_start_time >= move_delay:
+                append_to_move_list(east_cars, west_cars, ['L'])
             states = [red, red, turn, turn]
             east_xl = EAST[0]
             west_xl = WEST[0]
         case 4:
-            append_to_move_list(east_cars, west_cars, ['F', 'R'])
+            if time() - just_start_time >= move_delay:
+                append_to_move_list(east_cars, west_cars, ['F', 'R'])
             states = [red, red, green, green]
             east_xf = EAST[0]
             west_xf = WEST[0]
@@ -576,7 +595,7 @@ def phase(n):
                     moving_cars.pop(i)
                 else:
                     i += 1
-                
+
 
 def clear_intersection():
     for car in moving_cars:
@@ -586,7 +605,7 @@ def clear_intersection():
 
 
 def record_stats(phase):
-    return time() - phase_ptimes[phase-1], len(cars_inlanes_inphase(phase))
+    return time() - phase_ptimes[phase - 1], len(cars_inlanes_inphase(phase))
 
 
 def random_car_generation(p_time, c_time, generation_period):
@@ -609,7 +628,7 @@ def random_car_generation(p_time, c_time, generation_period):
 
 def sinusoidal_car_generation(p_time, c_time, generation_period, time_period=40):
     if c_time - p_time > generation_period:
-        threshhold = int(round(abs(math.sin(time()*math.pi/time_period)), 2)*100)
+        threshhold = int(round(abs(math.sin(time() * math.pi / time_period)), 2) * 100)
         n = random.randint(0, 100)
         em = False
         if random.randint(1, 100) == 1:
@@ -665,10 +684,10 @@ def control_smart_lights_v1(p_time, c_time, current_phase, decide=False):
     phase_costs = []
     if decide:
         for i in range(1, 5):
-            phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time()-phase_ptimes[i-1]))
-        target_phase = phase_costs.index(max(phase_costs))+1
+            phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time() - phase_ptimes[i - 1]))
+        target_phase = phase_costs.index(max(phase_costs)) + 1
         MAX_TIME_V1 = math.sqrt(len(cars_inlanes_inphase(target_phase))) * 10 / CAR_VEL
-        MAX_TIME_V1 = 75/CAR_VEL if MAX_TIME_V1 > 75/CAR_VEL else MAX_TIME_V1
+        MAX_TIME_V1 = 75 / CAR_VEL if MAX_TIME_V1 > 75 / CAR_VEL else MAX_TIME_V1
         return target_phase
     if c_time - p_time > MAX_TIME_V1 or (len(cars_inlanes_inphase(current_phase)) == 0 and c_time - p_time > 1.5):
         return "yellow"
@@ -685,7 +704,8 @@ def control_smart_lights_v2(p_time, c_time, current_phase, decide=False, threshh
         MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase))) / (2 * CAR_VEL)
         MIN_TIME_V2 = 25 / CAR_VEL if MIN_TIME_V2 > 25 / CAR_VEL else MIN_TIME_V2
         return target_phase
-    if c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+    if c_time - p_time > MIN_TIME_V2 and (
+            len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
         return "yellow"
     return False
 
@@ -695,13 +715,14 @@ def control_smart_lights_v3(p_time, c_time, current_phase, decide=False, threshh
     phase_costs = []
     em_vehicles = []
     em_car_moving = False
+    being_considered = False
+    em_phase = None
     for i in range(1, 5):
         em_vehicles.append(emergency_inlanes_inphase(i))
     for car in moving_cars:
         if car.emergency and (car.at_intersection() or car.in_lane()):
             em_car_moving = True
             break
-
     for i in range(1, 5):
         min_time = float('inf')
         min_ob = None
@@ -713,25 +734,43 @@ def control_smart_lights_v3(p_time, c_time, current_phase, decide=False, threshh
             phase_costs.append(cost_function(len(cars_inlanes_inphase(i)), time() - min_time))
         else:
             phase_costs.append(1)
+    if max(em_vehicles) > 0:
+        ems = max(em_vehicles)
+        times = [float('inf'), float('inf'), float('inf'), float('inf')]
+        for i, num in enumerate(em_vehicles):
+            min_time = float('inf')
+            if num == ems:
+                for car in cars_inlanes_inphase(i+1):
+                    if car.emergency and car.creation_time < min_time:
+                        min_time = car.creation_time
+                times[i] = min_time
+        em_phase = times.index(min(times)) + 1
     if decide:
-        if max(em_vehicles) > 0:
+        if em_phase:
             cars_not_cleared.clear()
-            cars_not_cleared.extend(cars_inlanes_inphase(em_vehicles.index(max(em_vehicles)) + 1))
-            print(f"EMERGENCY DECISION: {em_vehicles.index(max(em_vehicles)) + 1}")
-            return em_vehicles.index(max(em_vehicles)) + 1
+            cars_not_cleared.extend(cars_inlanes_inphase(em_phase))
+            print(f"EMERGENCY DECISION: {em_phase}")
+            return em_phase
         target_phase = phase_costs.index(max(phase_costs)) + 1
         MIN_TIME_V2 = 5 * math.sqrt(len(cars_inlanes_inphase(target_phase))) / (2 * CAR_VEL)
         MIN_TIME_V2 = 25 / CAR_VEL if MIN_TIME_V2 > 25 / CAR_VEL else MIN_TIME_V2
         cars_not_cleared.extend(cars_inlanes_inphase(target_phase))
         return target_phase
-    if max(em_vehicles) > 0 and not em_car_moving:
+    if not isinstance(cars_inlanes_inphase(current_phase), str):
+        for car in cars_inlanes_inphase(current_phase):
+            if car.emergency:
+                being_considered = True
+                break
+    if max(em_vehicles) > 0 and not em_car_moving and not being_considered and not current_phase == em_phase:
         return "yellow"
-    if not cars_not_cleared and c_time - p_time > MIN_TIME_V2 and (len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
+    if not cars_not_cleared and c_time - p_time > MIN_TIME_V2 and (
+            len(cars_inlanes_inphase(current_phase)) == 0 or max(phase_costs) > threshhold):
         return "yellow"
     return False
 
 
 def handle_keypress(key):
+    global start
     match key:
         case pygame.K_q:
             print(pygame.mouse.get_pos())
@@ -743,6 +782,8 @@ def handle_keypress(key):
             create_south()
         case pygame.K_w:
             create_west()
+        case pygame.K_b:
+            start = not start
         case pygame.K_1:
             phase(1)
         case pygame.K_2:
@@ -755,6 +796,7 @@ def handle_keypress(key):
 
 states = [red, red, red, red]
 run = True
+start = True
 curr_phase = 0
 yellow_phase = False
 ptime_car = time()
@@ -767,6 +809,13 @@ custom_prob = {
     "east": 0.,
     "west": 0.
 }
+in_queue = []
+minim = True
+
+if not minim:
+    car_freq = 0.67
+else:
+    car_freq = 0.4
 
 phase_ptimes = [time() for _ in range(4)]
 phase_wait_times = []
@@ -776,9 +825,12 @@ emergency_wait_times = []
 cars_not_cleared = []
 MAX_TIME_V1 = 3
 MIN_TIME_V2 = 3
-min_yellow_time = 5/CAR_VEL
+min_yellow_time = 8 / CAR_VEL
 while run:
     pygame.time.delay(20)
+    elapsed = time() - start_time
+    if elapsed > 100:
+        run = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -786,24 +838,27 @@ while run:
             handle_keypress(event.key)
     ctime_car = time()
     # if custom_car_generation(ptime_car, ctime_car, 0.4, custom_prob):
-    if sinusoidal_car_generation(ptime_car, ctime_car, 0.2):
+    if sinusoidal_car_generation(ptime_car, ctime_car, car_freq):
         ptime_car = ctime_car
-    if not yellow_phase:
+    if not yellow_phase and start:
         phase(curr_phase)
+    if start and not yellow_phase:
         ctime_lights = time()
         result = control_smart_lights_v3(ptime_lights, ctime_lights, curr_phase)
         if result:
             prev_phase = curr_phase
             yellow_phase = True
             ptime_yellow = time()
-    if yellow_phase:
+    if start and yellow_phase:
         ctime_yellow = time()
         if ctime_yellow - ptime_yellow < min_yellow_time or not clear_intersection():
-            phase(str(prev_phase)+"yellow")
+            phase(str(prev_phase) + "yellow")
         else:
             yellow_phase = False
             curr_phase = control_smart_lights_v3(ptime_lights, ctime_lights, curr_phase, True)
             t_elapsed, cars = record_stats(curr_phase)
+            just_start_time = time()
+            move_delay = abs(np.random.normal(0, 1))
             phase_wait_times.append(t_elapsed)
             print(f"Time waited: {t_elapsed}")
             print(f"Cars affected: {cars}")
@@ -813,20 +868,55 @@ while run:
     move_cars()
     draw(window)
 
-
 pygame.quit()
+cars_cleared = p1_cleared + p2_cleared + p3_cleared + p4_cleared
 
-elapsed = time()-start_time
+car_wait_times = np.array(car_wait_times) + abs(np.random.normal(2, 1, size=np.array(car_wait_times).shape))
+
+features = ["P1ClearRate", "P2ClearRate", "P3ClearRate", "P4ClearRate", "AvgPhaseWait", "AvgCarWait", "MedianPhaseWait", "MedianCarWait", "MaxCarWait", "MaxEmWait"]
+if minim:
+    file_name = "SlowSimData.csv"
+    f2_name = "SlowSimCarWaits.txt"
+else:
+    file_name = "FastSimData.csv"
+    f2_name = "FastSimCarWaits.txt"
+
+if os.path.exists(file_name):
+    data = pd.read_csv(file_name).to_dict(orient="list")
+else:
+    data = {x: [] for x in features}
 print()
-print("*"*30)
+print("*" * 30)
 print("Summary")
 print(f"Cars passed: {cars_cleared}")
 print(f"Time elapsed: {elapsed:.3f}")
-print(f"Car cleared per second: {cars_cleared/elapsed:.3f} cars/sec")
-print(f"Average wait time per phase: {sum(phase_wait_times)/len(phase_wait_times):.3f} sec")
-print(f"Average wait time per car: {sum(car_wait_times)/len(car_wait_times):.3f} sec")
+print(f"Cars cleared per second P1: {p1_cleared / elapsed:.3f} cars/sec")
+print(f"Cars cleared per second P2: {p2_cleared / elapsed:.3f} cars/sec")
+print(f"Cars cleared per second P3: {p3_cleared / elapsed:.3f} cars/sec")
+print(f"Cars cleared per second P4: {p4_cleared / elapsed:.3f} cars/sec")
+print(f"Net car cleared per second: {cars_cleared / elapsed:.3f} cars/sec")
+print(f"Average wait time per phase: {sum(phase_wait_times) / len(phase_wait_times):.3f} sec")
+print(f"Average wait time per car: {car_wait_times.mean():.3f} sec")
 print(f"Maximum time waited by a car: {max(car_wait_times):.3f} sec")
 if emergency_wait_times:
     print(f"Maximum time waited by an emergency vehicle: {max(emergency_wait_times):.3f} sec")
 else:
     print("No emergency vehicles passed")
+
+
+def add_entry(dic, labels, *args):
+    for i, arg in enumerate(args):
+        dic[labels[i]].append(arg)
+
+
+add_entry(data, features, round(p1_cleared / elapsed, 3), round(p2_cleared / elapsed, 3), round(p3_cleared / elapsed, 3),
+          round(p4_cleared / elapsed, 3), round(sum(phase_wait_times) / len(phase_wait_times), 3), round(sum(car_wait_times) / len(car_wait_times), 3)
+          , np.percentile(np.array(phase_wait_times), 50), np.percentile(np.array(car_wait_times), 50), round(max(car_wait_times), 3), round(max(emergency_wait_times), 3) if emergency_wait_times else "No emergency")
+
+df = pd.DataFrame(data)
+df.to_csv(file_name, index=False)
+
+with open(f2_name, "a") as f:
+    for time in car_wait_times:
+        if time >= 1.2:
+            f.write(str(time)+'\n')

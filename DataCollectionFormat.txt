@@ -36,7 +36,7 @@ KPIs (Key Performance Indicators):
 NOTES:
 For PhaseDir, look at Ring and Barrier Diagram [1-4]
 1 = FL(N)FL(S)
-2 = R(N)R(S)
+2 = R(N)R(S)L(W)
 3 = FRL(S)L(E)
 4 = FRL(N)L(W)
 5 = FRL(E)L(N)
